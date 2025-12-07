@@ -1,122 +1,148 @@
 # ESCRITO POR ALUMNO
 # Parámetro para recibir la ruta del archivo con los usuarios
 param(
-    [string]$Archivo
+    [string]$Archivo,
+    [switch]$DryRun   # AÑADIDO: Modo simulación
 )
 
-# ESCRITO POR ALUMNO
-# Mensaje de inicio del script
+# ============================================================
+# BLOQUE DRYRUN - EJECUCIÓN SIMULADA
+# ============================================================
+if ($DryRun) {
+    Write-Host "===============================================" -ForegroundColor Yellow
+    Write-Host "         MODO DRY-RUN ACTIVADO (SIMULACIÓN)" -ForegroundColor Yellow
+    Write-Host " Ninguna acción real será ejecutada en el sistema." -ForegroundColor Yellow
+    Write-Host " Solo se mostrará lo que el script HARÍA." -ForegroundColor Yellow
+    Write-Host "===============================================`n"
+
+    # Comprobación de parámetro
+    Write-Host "(DryRun) Se comprobaría si el archivo '$Archivo' existe."
+    Write-Host "(DryRun) Si el archivo no existe, se mostraría un error y se detendría."
+
+    # Lectura del archivo
+    Write-Host "(DryRun) Se leerían todas las líneas del archivo para procesarlas." 
+
+    Write-Host "`n=== Simulación del procesamiento de cada línea ==="
+
+    Write-Host "(DryRun) Para cada línea del archivo:"
+    Write-Host "   → Se validaría el formato: nombre:apellido1:apellido2:login"
+    Write-Host "   → Se extraerían los datos y se comprobaría que el login no está vacío."
+    Write-Host "   → Se comprobaría si el usuario existe en el sistema (Get-LocalUser)."
+
+    # Usuario existente
+    Write-Host "`n=== Si el usuario EXISTE ==="
+    Write-Host "(DryRun) Se crearía una carpeta en: C:\Users\proyecto\<login>"
+    Write-Host "(DryRun) Se buscarían todos los archivos de C:\Users\<login>"
+    Write-Host "(DryRun) Se copiarían los archivos a la carpeta del proyecto replicando estructura."
+    Write-Host "(DryRun) Se registraría en C:\bajas.log:"
+    Write-Host "         - Fecha y hora"
+    Write-Host "         - Login"
+    Write-Host "         - Lista de archivos movidos"
+    Write-Host "         - Total de ficheros movidos"
+
+    Write-Host "(DryRun) Se eliminaría el usuario del sistema: Remove-LocalUser"
+    Write-Host "(DryRun) Se eliminaría su carpeta personal: C:\Users\<login>"
+
+    # Usuario NO existente
+    Write-Host "`n=== Si el usuario NO EXISTE ==="
+    Write-Host "(DryRun) Se registraría el error en C:\bajaserror.log con formato:"
+    Write-Host "         fecha-hora-login-nombre-apellidos-ERROR:motivo"
+
+    Write-Host "`n==============================================="
+    Write-Host "          FIN DE SIMULACIÓN DRY-RUN"
+    Write-Host "     No se realizó ninguna acción real."
+    Write-Host "==============================================="
+
+    exit
+}
+
+
+# INICIO
 Write-Host "=== SCRIPT DE BACKUP DE USUARIOS ===" -ForegroundColor Cyan
 
-# ESCRITO POR ALUMNO
-# Comprobar si el archivo existe antes de continuar
+# Verificar si existe el archivo
 if (!(Test-Path $Archivo)) {
     Write-Host "ERROR: El archivo '$Archivo' no existe" -ForegroundColor Red
     exit
 }
 
-# ESCRITO POR ALUMNO
-# Leer todas las líneas del archivo
+# Leer archivo línea por línea
 $lineas = Get-Content $Archivo
 
-# ESCRITO POR ALUMNO
-# Procesar cada línea del archivo
 foreach ($linea in $lineas) {
-    # AYUDA DE IA (validación de líneas vacías)
-    # Saltar líneas que estén vacías
+    # Saltar líneas vacías
     if ([string]::IsNullOrWhiteSpace($linea)) {
         continue
     }
     
-    # ESCRITO POR ALUMNO
     Write-Host ""
     Write-Host "Procesando: $linea" -ForegroundColor Yellow
     
-    # ESCRITO POR ALUMNO
-    # Separar la línea por ":" para obtener los datos
+    # Separar datos por ":"
     $datos = $linea -split ":"
     
-    # ESCRITO POR ALUMNO
-    # Validar que la línea tenga exactamente 4 campos
+    # Validar que tenga 4 campos
     if ($datos.Count -ne 4) {
         Write-Host "ERROR: Formato incorrecto en la línea" -ForegroundColor Red
         continue
     }
     
-    # ESCRITO POR ALUMNO
-    # Extraer los datos de cada campo y quitar espacios
     $nombre = $datos[0].Trim()
     $apellido1 = $datos[1].Trim()
     $apellido2 = $datos[2].Trim()
     $login = $datos[3].Trim()
     
-    # ESCRITO POR ALUMNO
     # Validar que el login no esté vacío
     if ([string]::IsNullOrWhiteSpace($login)) {
         Write-Host "ERROR: Login vacío" -ForegroundColor Red
         continue
     }
     
-    # AYUDA DE IA (try-catch para verificar usuario)
-    # Verificar si el usuario existe en el sistema
+    # Verificar si el usuario existe
     try {
         $usuarioExiste = Get-LocalUser -Name $login -ErrorAction Stop
     } catch {
         $usuarioExiste = $null
     }
     
-    # ESCRITO POR ALUMNO
-    # Si el usuario existe, hacer el backup
     if ($usuarioExiste) {
         Write-Host "Usuario '$login' existe - Creando backup..." -ForegroundColor Green
         
-        # ESCRITO POR ALUMNO
-        # Crear carpeta de backup en C:\Users\proyecto
+        # Crear carpeta backup en C:\Users\proyecto
         $carpetaBackup = "C:\Users\proyecto\$login"
         if (!(Test-Path $carpetaBackup)) {
             New-Item -Path $carpetaBackup -ItemType Directory -Force | Out-Null
         }
         
-        # ESCRITO POR ALUMNO
-        # Definir la ruta del usuario
+        # Ruta del usuario a respaldar
         $rutaUsuario = "C:\Users\$login"
         
-        # ESCRITO POR ALUMNO
-        # Si existe la carpeta del usuario, copiar sus archivos
         if (Test-Path $rutaUsuario) {
-            # ESCRITO POR ALUMNO
-            # Obtener todos los archivos del usuario (incluyendo ocultos)
+            # Obtener todos los archivos
             $archivos = Get-ChildItem -Path $rutaUsuario -Recurse -File -Force -ErrorAction SilentlyContinue
             $contador = 0
             $listaArchivos = @()
             
-            # ESCRITO POR ALUMNO
-            # Copiar cada archivo a la carpeta de backup
             foreach ($arch in $archivos) {
                 try {
                     $contador++
                     
-                    # AYUDA DE IA (Substring para ruta relativa)
-                    # Calcular la ruta relativa del archivo
+                    # Calcular ruta relativa
                     $rutaRelativa = $arch.FullName.Substring($rutaUsuario.Length + 1)
                     
-                    # ESCRITO POR ALUMNO
-                    # Calcular la ruta de destino
+                    # Ruta destino
                     $destino = Join-Path $carpetaBackup $rutaRelativa
                     $carpetaDestino = Split-Path $destino -Parent
                     
-                    # ESCRITO POR ALUMNO
-                    # Crear la carpeta de destino si no existe
+                    # Crear carpeta destino si no existe
                     if (!(Test-Path $carpetaDestino)) {
                         New-Item -Path $carpetaDestino -ItemType Directory -Force | Out-Null
                     }
                     
-                    # ESCRITO POR ALUMNO
-                    # Copiar el archivo
+                    # Copiar archivo
                     Copy-Item -Path $arch.FullName -Destination $destino -Force
                     
-                    # ESCRITO POR ALUMNO
-                    # Guardar en la lista para el log
+                    # Añadir a lista para log
                     $listaArchivos += "${contador}:${rutaRelativa}"
                     
                     Write-Host "  Copiado: $rutaRelativa" -ForegroundColor Gray
@@ -126,27 +152,23 @@ foreach ($linea in $lineas) {
                 }
             }
             
-            # ESCRITO POR ALUMNO
             # Registrar en bajas.log
             $fecha = Get-Date -Format "dd/MM/yyyy HH:mm:ss"
             $logEntry = "$fecha-$login /home/proyecto/$login"
             Add-Content -Path "C:\bajas.log" -Value $logEntry
             
-            # ESCRITO POR ALUMNO
-            # Escribir la lista de archivos copiados
+            # Escribir lista de archivos
             foreach ($item in $listaArchivos) {
                 Add-Content -Path "C:\bajas.log" -Value $item
             }
             
-            # ESCRITO POR ALUMNO
-            # Escribir el total de archivos
+            # Escribir total
             Add-Content -Path "C:\bajas.log" -Value "Total de ficheros movidos: $contador"
             
             Write-Host "Total archivos copiados: $contador" -ForegroundColor Cyan
         }
         
-        # ESCRITO POR ALUMNO
-        # Eliminar el usuario del sistema
+        # Eliminar usuario
         try {
             Remove-LocalUser -Name $login -ErrorAction Stop
             Write-Host "Usuario '$login' eliminado" -ForegroundColor Green
@@ -154,8 +176,7 @@ foreach ($linea in $lineas) {
             Write-Host "ERROR al eliminar usuario: $_" -ForegroundColor Red
         }
         
-        # ESCRITO POR ALUMNO
-        # Eliminar la carpeta del usuario
+        # Eliminar carpeta del usuario
         try {
             Remove-Item -Path $rutaUsuario -Recurse -Force -ErrorAction Stop
             Write-Host "Carpeta del usuario eliminada" -ForegroundColor Green
@@ -164,11 +185,8 @@ foreach ($linea in $lineas) {
         }
         
     } else {
-        # ESCRITO POR ALUMNO
-        # Si el usuario no existe, registrar el error
         Write-Host "Usuario '$login' NO existe" -ForegroundColor Red
         
-        # ESCRITO POR ALUMNO
         # Escribir en bajaserror.log
         $fecha = Get-Date -Format "dd/MM/yyyy HH:mm:ss"
         $motivoError = "login no existe en el sistema"
@@ -177,8 +195,6 @@ foreach ($linea in $lineas) {
     }
 }
 
-# ESCRITO POR ALUMNO
-# Mensajes de finalización
 Write-Host ""
 Write-Host "=== PROCESO COMPLETADO ===" -ForegroundColor Green
 Write-Host "Fin" -ForegroundColor Cyan
