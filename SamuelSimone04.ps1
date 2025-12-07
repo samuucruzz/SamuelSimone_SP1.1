@@ -1,7 +1,43 @@
 # (Alumno) Defino el parámetro porque quiero que el script acepte un archivo desde consola.
 param(
-    [string]$Archivo
+    [string]$Archivo,
+    [Switch]$DryRun   # (Alumno) Parámetro añadido para ejecución simulada
 )
+
+if ($DryRun) {
+    Write-Host "============================================" -ForegroundColor Yellow
+    Write-Host "MODO SIMULACIÓN DryRun ACTIVADO" -ForegroundColor Yellow
+    Write-Host "El script NO ejecutará pruebas reales." -ForegroundColor Yellow
+    Write-Host "Solo se mostrarán las acciones que SE REALIZARÍAN." -ForegroundColor Yellow
+    Write-Host "============================================`n" -ForegroundColor Yellow
+
+    # Simulación de todas las pruebas sin ejecutarlas
+    Write-Host "(DryRun) PRUEBA 1: Se comprobaría si SamuelSimone04.ps1 existe."
+    Write-Host "(DryRun) PRUEBA 2: Se comprobaría si C:\bajas.log existe."
+    Write-Host "(DryRun) PRUEBA 3: Se comprobaría si C:\bajaserror.log existe."
+    Write-Host "(DryRun) PRUEBA 4: Se comprobaría si bajas.log tiene contenido."
+    Write-Host "(DryRun) PRUEBA 5: Se comprobaría si bajaserror.log tiene contenido."
+    Write-Host "(DryRun) PRUEBA 6: Se analizaría si hay usuarios inexistentes en bajaserror.log."
+    Write-Host "(DryRun) PRUEBA 7: Se validaría el procesamiento de usuarios existentes."
+    Write-Host "(DryRun) PRUEBA 8: Se buscarían usuarios específicos en bajas.log."
+    Write-Host "(DryRun) PRUEBA 9: Se verificaría el formato del archivo bajas.log."
+    Write-Host "(DryRun) PRUEBA 10: Se comprobaría el formato completo del archivo."    
+
+    Write-Host ""
+    Write-Host "============================================" -ForegroundColor Cyan
+    Write-Host "RESULTADO FINAL (DryRun)" -ForegroundColor Cyan
+    Write-Host "============================================" -ForegroundColor Cyan
+    Write-Host "PUNTUACIÓN: 0/10 (Simulación, no se evaluó nada)" -ForegroundColor Yellow
+    Write-Host "No se generaron errores porque NO se realizaron pruebas." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Fin del modo DryRun. Ejecución segura sin efectos reales." -ForegroundColor Green
+
+    exit 0   # IMPORTANTE: El script termina aquí para no ejecutar nada real
+}
+
+# =============================================================
+#   EJECUCIÓN NORMAL (NO DRYRUN)
+# =============================================================
 
 # (Alumno) Inicio del script, solo muestro título y nota provisional.
 # (IA) Esta parte de Write-Host con colores la pedí a la IA porque no recordaba los parámetros exactos.
