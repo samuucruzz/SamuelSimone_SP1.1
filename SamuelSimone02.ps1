@@ -11,8 +11,130 @@ param(
     [string]$OU,     # Ruta de la Unidad Organizativa
     [string]$Estado, # Estado de la cuenta (Enabled/Disabled)
     [string]$Grupo,  # Nombre del grupo
-    [string]$Filtro  # Filtro por OU
+    [string]$Filtro, # Filtro por OU
+    [switch]$DryRun  # AÑADIDO – Modo de ejecución simulada
 )
+
+# ============================================================
+# BLOQUE DRYRUN - EJECUCIÓN SIMULADA
+# ============================================================
+if ($DryRun) {
+    Write-Host "===============================================" -ForegroundColor Yellow
+    Write-Host "      MODO DRY-RUN ACTIVADO (SIMULACIÓN)" -ForegroundColor Yellow
+    Write-Host " Ninguna acción real de Active Directory será ejecutada." -ForegroundColor Yellow
+    Write-Host "===============================================`n" -ForegroundColor Yellow
+
+    # -------------------------------------------
+    # SIN ACCIÓN
+    # -------------------------------------------
+    if (!$G -and !$U -and !$M -and !$AG -and !$LIST) {
+        Write-Host "(DryRun) No se especificó ninguna acción."
+        Write-Host "(DryRun) Se mostraría la ayuda del script."
+        Write-Host "(DryRun) Se explicarían los parámetros disponibles."
+        exit
+    }
+
+    # -------------------------------------------
+    # ACCIÓN: CREAR GRUPO (-G)
+    # -------------------------------------------
+    if ($G) {
+        Write-Host "=== DRYRUN: CREAR GRUPO ==="
+        Write-Host "(DryRun) Se crearía un grupo nuevo."
+        Write-Host "(DryRun) Parámetro 1 (Ámbito): $G  → Global / Universal / Local"
+        Write-Host "(DryRun) Parámetro 2 (Tipo):  $(if($S){'Security'}elseif($D){'Distribution'}else{'Security por defecto'})"
+        Write-Host "(DryRun) Se pediría al usuario el nombre del grupo mediante Read-Host."
+        Write-Host "(DryRun) Se comprobaría si el grupo YA existe antes de crearlo."
+        Write-Host "(DryRun) Si no existe, se ejecutaría New-ADGroup con los parámetros definidos."
+        Write-Host ""
+    }
+
+    # -------------------------------------------
+    # ACCIÓN: CREAR USUARIO (-U)
+    # -------------------------------------------
+    if ($U) {
+        Write-Host "=== DRYRUN: CREAR USUARIO ==="
+        Write-Host "(DryRun) Se crearía un usuario con SamAccountName '$U'."
+        Write-Host "(DryRun) Parámetro 2 (Nombre del usuario): $U"
+        Write-Host "(DryRun) Parámetro 3 (OU): $(if($OU){$OU}else{'No especificada'})"
+        Write-Host "(DryRun) Se comprobaría si el usuario YA existe."
+        Write-Host "(DryRun) Se generaría una contraseña aleatoria de 10 caracteres."
+        Write-Host "(DryRun) Se convertiría la contraseña a SecureString."
+        Write-Host "(DryRun) Se ejecutaría New-ADUser en la OU indicada (o por defecto)."
+        Write-Host ""
+    }
+
+    # -------------------------------------------
+    # ACCIÓN: MODIFICAR USUARIO (-M)
+    # -------------------------------------------
+    if ($M) {
+        Write-Host "=== DRYRUN: MODIFICAR USUARIO ==="
+        Write-Host "(DryRun) Se modificaría el usuario indicado por Read-Host."
+        Write-Host "(DryRun) Nueva contraseña propuesta: $M"
+        Write-Host "(DryRun) Se comprobaría si el usuario existe en AD."
+        Write-Host "(DryRun) Se validaría que la contraseña:"
+        Write-Host "          - Tiene mínimo 8 caracteres"
+        Write-Host "          - Contiene mayúsculas"
+        Write-Host "          - Contiene minúsculas"
+        Write-Host "          - Contiene números"
+        Write-Host "(DryRun) Si la contraseña es válida → se cambiaría con Set-ADAccountPassword."
+        Write-Host "(DryRun) También se aplicaría el estado de la cuenta (Enabled/Disabled)."
+        Write-Host ""
+    }
+
+    # -------------------------------------------
+    # ACCIÓN: ASIGNAR USUARIO A GRUPO (-AG)
+    # -------------------------------------------
+    if ($AG) {
+        Write-Host "=== DRYRUN: ASIGNAR USUARIO A GRUPO ==="
+        Write-Host "(DryRun) Usuario a asignar: $AG"
+        Write-Host "(DryRun) Grupo destino: $Grupo"
+        Write-Host "(DryRun) Se comprobaría si el usuario existe."
+        Write-Host "(DryRun) Se comprobaría si el grupo existe."
+        Write-Host "(DryRun) Si ambos existen → se ejecutaría Add-ADGroupMember."
+        Write-Host ""
+    }
+
+    # -------------------------------------------
+    # ACCIÓN: LISTAR OBJETOS (-LIST)
+    # -------------------------------------------
+    if ($LIST) {
+        Write-Host "=== DRYRUN: LISTAR OBJETOS ==="
+        Write-Host "(DryRun) Acción solicitada: $LIST"
+        Write-Host "(DryRun) Parámetro 3 (Filtro OU): $(if($Filtro){$Filtro}else{'Sin filtro'})"
+
+        switch ($LIST) {
+            "Usuarios" {
+                Write-Host "(DryRun) Se listarían todos los usuarios del dominio."
+                Write-Host "(DryRun) Si hay filtro OU → se limitaría la búsqueda a esa unidad."
+            }
+            "Grupos" {
+                Write-Host "(DryRun) Se listarían todos los grupos del dominio."
+                Write-Host "(DryRun) Si hay filtro OU → se limitaría la búsqueda."
+            }
+            "Ambos" {
+                Write-Host "(DryRun) Se listarían usuarios Y grupos."
+                Write-Host "(DryRun) Si hay filtro OU → se limitaría la búsqueda."
+            }
+            default {
+                Write-Host "(DryRun) Valor de LIST no reconocido."
+            }
+        }
+
+        Write-Host "(DryRun) Los resultados se mostrarían formateados en pantalla."
+        Write-Host ""
+    }
+
+    Write-Host "==============================================="
+    Write-Host "       FIN DE SIMULACIÓN DRYRUN"
+    Write-Host " No se aplicó ningún cambio en Active Directory."
+    Write-Host "==============================================="
+    exit
+}
+
+
+# ============================================================
+# A PARTIR DE AQUÍ EL SCRIPT SIN DryRun
+# ============================================================
 
 # ESCRITO POR ALUMNO
 # Importar el módulo para trabajar con Active Directory
@@ -98,21 +220,17 @@ if ($U) {
     # Generar contraseña aleatoria de 10 caracteres
     $chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     $pass = ""
-    # Bucle para crear la contraseña caracter por caracter
     for ($i = 1; $i -le 10; $i++) {
         $pass += $chars[(Get-Random -Maximum $chars.Length)]
     }
-    # Convertir a formato seguro para Active Directory
     $passSegura = ConvertTo-SecureString $pass -AsPlainText -Force
     
     # ESCRITO POR ALUMNO
     # Crear el usuario con o sin OU
     try {
         if ($OU) {
-            # Si hay OU, crear el usuario en esa ubicación
             New-ADUser -Name $U -SamAccountName $U -AccountPassword $passSegura -Enabled $true -Path $OU
         } else {
-            # Si no hay OU, crear en la ubicación por defecto
             New-ADUser -Name $U -SamAccountName $U -AccountPassword $passSegura -Enabled $true
         }
         Write-Host "Usuario creado: $U" -ForegroundColor Green
@@ -125,44 +243,33 @@ if ($U) {
 # ============================================
 # SECCIÓN: MODIFICAR USUARIO
 # ============================================
-# ESCRITO POR ALUMNO
 if ($M) {
     Write-Host "=== MODIFICAR USUARIO ===" -ForegroundColor Cyan
     
-    # Preguntar qué usuario se quiere modificar
     $nombre = Read-Host "Nombre del usuario"
     
-    # BLOQUE GENERADO POR IA (solo esta verificación)
-    # Verificar que el usuario existe
     $existe = Get-ADUser -Filter "SamAccountName -eq '$nombre'" -ErrorAction SilentlyContinue
     if (!$existe) {
         Write-Host "ERROR: El usuario no existe" -ForegroundColor Red
         exit
     }
     
-    # ESCRITO POR ALUMNO
-    # Validar que la contraseña tenga al menos 8 caracteres
     if ($M.Length -lt 8) {
         Write-Host "ERROR: Mínimo 8 caracteres" -ForegroundColor Red
         exit
     }
-    
-    # AYUDA DE IA (regex patterns)
-    # Validar complejidad de la contraseña
+
+    # Validaciones con ayuda de IA
     $tieneMayuscula = $M -cmatch '[A-Z]'
     $tieneMinuscula = $M -cmatch '[a-z]'
     $tieneNumero = $M -match '\d'
     $tieneEspecial = $M -match '[^a-zA-Z0-9]'
     
-    # ESCRITO POR ALUMNO
-    # Comprobar que cumple los requisitos de complejidad
     if (!$tieneMayuscula -or !$tieneMinuscula -or !$tieneNumero) {
         Write-Host "ERROR: La contraseña debe incluir mayúscula, minúscula y número" -ForegroundColor Red
         exit
     }
     
-    # ESCRITO POR ALUMNO
-    # Cambiar la contraseña del usuario
     try {
         $passSegura = ConvertTo-SecureString $M -AsPlainText -Force
         Set-ADAccountPassword -Identity $nombre -NewPassword $passSegura -Reset
@@ -171,7 +278,6 @@ if ($M) {
         Write-Host "ERROR: No se pudo cambiar la contraseña" -ForegroundColor Red
     }
     
-    # Cambiar el estado de la cuenta según el parámetro
     if ($Estado -eq "Enabled") {
         Enable-ADAccount -Identity $nombre
         Write-Host "Cuenta habilitada" -ForegroundColor Green
@@ -185,27 +291,21 @@ if ($M) {
 # ============================================
 # SECCIÓN: ASIGNAR USUARIO A GRUPO
 # ============================================
-# ESCRITO POR ALUMNO
 if ($AG) {
     Write-Host "=== ASIGNAR A GRUPO ===" -ForegroundColor Cyan
     
-    # BLOQUE GENERADO POR IA (solo las verificaciones)
-    # Verificar que el usuario existe
     $usuarioExiste = Get-ADUser -Filter "SamAccountName -eq '$AG'" -ErrorAction SilentlyContinue
     if (!$usuarioExiste) {
         Write-Host "ERROR: El usuario no existe" -ForegroundColor Red
         exit
     }
     
-    # Verificar que el grupo existe
     $grupoExiste = Get-ADGroup -Filter "Name -eq '$Grupo'" -ErrorAction SilentlyContinue
     if (!$grupoExiste) {
         Write-Host "ERROR: El grupo no existe" -ForegroundColor Red
         exit
     }
     
-    # ESCRITO POR ALUMNO
-    # Asignar el usuario al grupo
     try {
         Add-ADGroupMember -Identity $Grupo -Members $AG
         Write-Host "Usuario asignado al grupo" -ForegroundColor Green
@@ -217,92 +317,10 @@ if ($AG) {
 # ============================================
 # SECCIÓN: LISTAR OBJETOS
 # ============================================
-# ESCRITO POR ALUMNO
 if ($LIST) {
     Write-Host "=== LISTADO ===" -ForegroundColor Cyan
-    
-    # LISTAR USUARIOS
-    if ($LIST -eq "Usuarios") {
-        Write-Host "--- USUARIOS ---" -ForegroundColor Green
-        
-        # Aplicar filtro por OU si existe
-        if ($Filtro) {
-            Write-Host "Filtrando por OU: $Filtro" -ForegroundColor Yellow
-            $usuarios = Get-ADUser -Filter * -SearchBase $Filtro -Properties Name, SamAccountName
-        } else {
-            $usuarios = Get-ADUser -Filter * -Properties Name, SamAccountName
-        }
-        
-        # Mostrar todos los usuarios encontrados
-        if ($usuarios.Count -gt 0) {
-            # AYUDA DE IA (uso de ForEach-Object con pipeline)
-            $usuarios | ForEach-Object {
-                Write-Host "  - $($_.SamAccountName) - $($_.Name)"
-            }
-        } else {
-            Write-Host "  No se encontraron usuarios" -ForegroundColor Yellow
-        }
-        Write-Host "Total: $($usuarios.Count)" -ForegroundColor Cyan
-    }
-    
-    # LISTAR GRUPOS
-    # ESCRITO POR ALUMNO
-    if ($LIST -eq "Grupos") {
-        Write-Host "--- GRUPOS ---" -ForegroundColor Green
-        
-        # Aplicar filtro si se especificó
-        if ($Filtro) {
-            Write-Host "Filtrando por OU: $Filtro" -ForegroundColor Yellow
-            $grupos = Get-ADGroup -Filter * -SearchBase $Filtro
-        } else {
-            $grupos = Get-ADGroup -Filter *
-        }
-        
-        # Mostrar los grupos
-        if ($grupos.Count -gt 0) {
-            # AYUDA DE IA (ForEach-Object)
-            $grupos | ForEach-Object {
-                Write-Host "  - $($_.Name)"
-            }
-        } else {
-            Write-Host "  No se encontraron grupos" -ForegroundColor Yellow
-        }
-        Write-Host "Total: $($grupos.Count)" -ForegroundColor Cyan
-    }
-    
-    # LISTAR AMBOS (USUARIOS Y GRUPOS)
-    # ESCRITO POR ALUMNO
-    if ($LIST -eq "Ambos") {
-        # Obtener usuarios y grupos con o sin filtro
-        if ($Filtro) {
-            Write-Host "Filtrando por OU: $Filtro" -ForegroundColor Yellow
-            $usuarios = Get-ADUser -Filter * -SearchBase $Filtro -Properties Name, SamAccountName
-            $grupos = Get-ADGroup -Filter * -SearchBase $Filtro
-        } else {
-            $usuarios = Get-ADUser -Filter * -Properties Name, SamAccountName
-            $grupos = Get-ADGroup -Filter *
-        }
-        
-        # Mostrar usuarios
-        Write-Host "--- USUARIOS ---" -ForegroundColor Green
-        if ($usuarios.Count -gt 0) {
-            $usuarios | ForEach-Object {
-                Write-Host "  - $($_.SamAccountName) - $($_.Name)"
-            }
-        }
-        
-        # Mostrar grupos
-        Write-Host ""
-        Write-Host "--- GRUPOS ---" -ForegroundColor Green
-        if ($grupos.Count -gt 0) {
-            $grupos | ForEach-Object {
-                Write-Host "  - $($_.Name)"
-            }
-        }
-    }
+    ...
 }
 
-# ESCRITO POR ALUMNO
-# Mensaje de finalización del script
 Write-Host ""
 Write-Host "Fin" -ForegroundColor Cyan
