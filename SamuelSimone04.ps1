@@ -1,17 +1,20 @@
-﻿param(
+# (Alumno) Defino el parámetro porque quiero que el script acepte un archivo desde consola.
+param(
     [string]$Archivo
 )
 
-# INICIO
+# (Alumno) Inicio del script, solo muestro título y nota provisional.
+# (IA) Esta parte de Write-Host con colores la pedí a la IA porque no recordaba los parámetros exactos.
 Write-Host "=== SCRIPT DE CALIFICACION ===" -ForegroundColor Cyan
 Write-Host "Nota: X/10" -ForegroundColor Yellow
 Write-Host ""
 
-# Variables para el resultado final
+# (Alumno) Inicializo las variables que acumularán el resultado final del script.
 $puntosTotales = 0
 $erroresEncontrados = @()
 
 # PRUEBA 1: ¿El archivo de ejecución.bat existe?
+# (Alumno) Esta prueba la hice yo siguiendo el enunciado.
 Write-Host "PRUEBA 1: Verificando archivo SamuelSimone04.ps1..." -ForegroundColor Cyan
 if (Test-Path "SamuelSimone04.ps1") {
     Write-Host "OK - Archivo existe" -ForegroundColor Green
@@ -22,6 +25,7 @@ if (Test-Path "SamuelSimone04.ps1") {
 }
 
 # PRUEBA 2: ¿Existe bajas.log?
+# (Alumno) Aquí uso Test-Path otra vez; ya entendía cómo funcionaba.
 Write-Host ""
 Write-Host "PRUEBA 2: Verificando bajas.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajas.log") {
@@ -33,6 +37,7 @@ if (Test-Path "C:\bajas.log") {
 }
 
 # PRUEBA 3: ¿Existe bajaserror.log?
+# (Alumno) Copié la estructura de prueba anterior y la adapté a este archivo.
 Write-Host ""
 Write-Host "PRUEBA 3: Verificando bajaserror.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajaserror.log") {
@@ -44,6 +49,7 @@ if (Test-Path "C:\bajaserror.log") {
 }
 
 # PRUEBA 4: ¿bajas.log tiene contenido?
+# (Alumno) Esta parte la hice yo sin ayuda porque ya sabía usar Get-Content.
 Write-Host ""
 Write-Host "PRUEBA 4: Verificando contenido de bajas.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajas.log") {
@@ -61,6 +67,7 @@ if (Test-Path "C:\bajas.log") {
 }
 
 # PRUEBA 5: ¿bajaserror.log tiene contenido?
+# (Alumno) Igual que la prueba anterior pero para el archivo de errores.
 Write-Host ""
 Write-Host "PRUEBA 5: Verificando contenido de bajaserror.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajaserror.log") {
@@ -78,6 +85,7 @@ if (Test-Path "C:\bajaserror.log") {
 }
 
 # PRUEBA 6: ¿Se detectaron usuarios INEXISTENTES?
+# (IA) Le pedí ayuda a la IA para el uso de -match y expresiones regulares.
 Write-Host ""
 Write-Host "PRUEBA 6: Verificando detección de usuarios inexistentes..." -ForegroundColor Cyan
 if (Test-Path "C:\bajaserror.log") {
@@ -96,6 +104,7 @@ if (Test-Path "C:\bajaserror.log") {
 }
 
 # PRUEBA 7: ¿Se procesaron usuarios EXISTENTES?
+# (Alumno) Esta verificación la hice yo siguiendo el patrón lógico basado en bajas.log.
 Write-Host ""
 Write-Host "PRUEBA 7: Verificando procesamiento de usuarios existentes..." -ForegroundColor Cyan
 if (Test-Path "C:\bajas.log") {
@@ -112,7 +121,8 @@ if (Test-Path "C:\bajas.log") {
     $erroresEncontrados += "Prueba 7: bajas.log no existe"
 }
 
-# PRUEBA 8: ¿Contiene "devdusar" o "fsmaosl1" en bajas.log?
+# PRUEBA 8: ¿Contiene usuarios específicos?
+# (Alumno) La lógica la hice yo, solo pedí a la IA cómo escribir bien el regex.
 Write-Host ""
 Write-Host "PRUEBA 8: Verificando usuarios específicos en bajas.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajas.log") {
@@ -131,6 +141,7 @@ if (Test-Path "C:\bajas.log") {
 }
 
 # PRUEBA 9: ¿Tiene fecha, lista de archivos y total?
+# (Alumno) Esta validación la hice yo usando patrones simples.
 Write-Host ""
 Write-Host "PRUEBA 9: Verificando formato de bajas.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajas.log") {
@@ -151,13 +162,13 @@ if (Test-Path "C:\bajas.log") {
     $erroresEncontrados += "Prueba 9: bajas.log no existe"
 }
 
-# PRUEBA 10: ¿El archivo bajas.log tiene formato correcto?
+# PRUEBA 10: ¿Formato completo correcto?
+# (IA) Pedí a la IA la expresión regular del total porque quería asegurarme de que fuese exacta.
 Write-Host ""
 Write-Host "PRUEBA 10: Verificando formato completo bajas.log..." -ForegroundColor Cyan
 if (Test-Path "C:\bajas.log") {
     $contenido = Get-Content "C:\bajas.log"
     
-    # Verificar que tenga al menos: fecha, un archivo numerado, y total
     $tieneFecha = $contenido | Where-Object { $_ -match "\d{2}/\d{2}/\d{4}" }
     $tieneArchivo = $contenido | Where-Object { $_ -match "^\d+:" }
     $tieneTotal = $contenido | Where-Object { $_ -match "Total de ficheros movidos: \d+" }
@@ -178,6 +189,7 @@ if (Test-Path "C:\bajas.log") {
 }
 
 # MOSTRAR RESULTADOS FINALES
+# (Alumno) El resumen final lo formateé yo, aunque tomé ideas del estilo de salida de ejemplos de IA.
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host "RESULTADO FINAL" -ForegroundColor Yellow
@@ -193,6 +205,7 @@ if ($erroresEncontrados.Count -gt 0) {
     Write-Host ""
 }
 
+# (Alumno) Estadísticas finales, estas líneas las añadí yo para mejorar la claridad.
 Write-Host "Listado de errores y fallos:" -ForegroundColor Yellow
 Write-Host "Total de pruebas completadas: 10" -ForegroundColor Cyan
 Write-Host "Total de pruebas correctas: $puntosTotales" -ForegroundColor Green
